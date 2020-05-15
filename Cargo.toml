@@ -6,5 +6,9 @@ edition = "2018"
 
 
 [dependencies]
+gflags = "0.3.3"
+uuid = { version = "0.8", features = ["v4"] }
+bincode = "1.2.1"
+serde = { version = "1.0", features = ["derive"] }
 core = { path = "../core" }
 math = { path = "../math" }
