@@ -7,8 +7,6 @@ use std::io;
 use std::net::{SocketAddr, UdpSocket};
 use uuid::Uuid;
 
-pub type Data = [u8; MAX_MESSAGE_SIZE];
-
 const MAX_MESSAGE_SIZE: usize = 65535;
 
 pub struct NetworkHandler {
@@ -20,7 +18,7 @@ pub struct NetworkHandler {
 impl NetworkHandler {
     pub fn new() -> io::Result<Self> {
         let listener = UdpSocket::bind(format!("{}:{}", IP.flag, PORT.flag))?;
-        listener.set_nonblocking(true);
+        listener.set_nonblocking(true).unwrap();
 
         Ok(Self {
             listener,
@@ -46,7 +44,24 @@ impl NetworkHandler {
         bincode::deserialize(&data).map(|event| (id, event)).ok()
     }
 
-    pub fn send(&self, player_id: PlayerId, event: &ServerEvent) {}
+    pub fn send(&self, player_id: &PlayerId, event: &ServerEvent) {
+        if let Some(socket) = self.player_to_socket.get(player_id) {
+            let buffer = bincode::serialize(event).unwrap();
+            let _ = self.listener.send_to(&buffer, socket);
+        }
+    }
 
-    pub fn broadcast(&self, event: &ServerEvent) {}
+    pub fn broadcast_except(&self, player_id: &PlayerId, event: ServerEvent) {
+        for player in self.player_to_socket.keys() {
+            if *player != *player_id {
+                self.send(player, &event)
+            }
+        }
+    }
+
+    pub fn broadcast(&self, event: ServerEvent) {
+        for player in self.player_to_socket.keys() {
+            self.send(player, &event)
+        }
+    }
 }

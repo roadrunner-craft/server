@@ -1,7 +1,7 @@
 use crate::network::NetworkHandler;
 use crate::player::{Player, PlayerId};
 
-use core::events::ClientEvent;
+use core::events::{ClientEvent, ServerEvent};
 use core::world::World;
 use std::collections::HashMap;
 use std::io;
@@ -54,17 +54,28 @@ impl Game {
     fn handle_event(&mut self, id: &u128, event: &ClientEvent) {
         match event {
             ClientEvent::PlayerConnect => {
+                let event = ServerEvent::PlayerList {
+                    ids: self.players.keys().map(|n| *n).collect::<Vec<u128>>(),
+                };
+                self.network.send(id, &event);
+
                 self.players.insert(*id, Player::new(*id));
-                //self.network.broadcast()
+
+                self.network
+                    .broadcast_except(id, ServerEvent::PlayerConnected { id: *id });
             }
             ClientEvent::PlayerDisconnect => {
                 self.players.remove(id);
-                //self.network.broadcast()
+                self.network
+                    .broadcast_except(id, ServerEvent::PlayerDisconnected { id: *id });
             }
             ClientEvent::PlayerMove { position } => {
                 if let Some(player) = self.players.get_mut(id) {
                     player.position = *position;
-                    //self.network.broadcast()
+                    self.network.broadcast(ServerEvent::PlayerMoved {
+                        id: *id,
+                        position: *position,
+                    });
                 }
             }
         }
