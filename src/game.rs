@@ -8,7 +8,7 @@ use std::io;
 use std::thread;
 use std::time::{Duration, Instant};
 
-const SERVER_TICK_PER_SEC: u32 = 60;
+const SERVER_TICK_PER_SEC: u32 = 20;
 
 pub struct Game {
     network: NetworkHandler,
@@ -26,23 +26,33 @@ impl Game {
     }
 
     pub fn start(&mut self) {
-        let mut last_time: Instant = Instant::now();
+        let expected_tick_duration = Duration::new(1, 0) / SERVER_TICK_PER_SEC;
 
         loop {
-            let elapsed = last_time.elapsed();
+            let start = Instant::now();
 
-            let tick_duration = Duration::new(1, 0) / SERVER_TICK_PER_SEC;
-            if let Some(cooldown) = tick_duration.checked_sub(elapsed) {
+            // update the game
+            self.update();
+
+            // poll as many events as possible
+            while start.elapsed() < expected_tick_duration {
+                match self.network.poll() {
+                    Some((id, event)) => self.handle_event(&id, &event),
+                    None => break,
+                }
+            }
+
+            // ms per tick
+            let mspt = start.elapsed().as_secs_f64() * 1000.0;
+
+            if let Some(cooldown) = expected_tick_duration.checked_sub(start.elapsed()) {
                 thread::sleep(cooldown);
             }
 
-            last_time = Instant::now();
+            // tick per second
+            let tps = 1.0 / start.elapsed().as_secs_f64();
 
-            if let Some((id, event)) = self.network.poll() {
-                self.handle_event(&id, &event);
-            }
-
-            //self.update();
+            println!("mspt: {:.3}, tps: {:.1}", mspt, tps);
         }
     }
 
