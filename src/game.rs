@@ -2,10 +2,10 @@ use crate::network::NetworkHandler;
 use crate::player::{Player, PlayerId};
 
 use core::events::{ClientEvent, ServerEvent};
+use core::utils::sleep;
 use core::world::World;
 use std::collections::HashMap;
 use std::io;
-use std::thread;
 use std::time::{Duration, Instant};
 
 const SERVER_TICK_PER_SEC: u32 = 20;
@@ -31,7 +31,8 @@ impl Game {
         loop {
             let start = Instant::now();
 
-            // update the game
+            // maybe this function should have a timeout if something makes it run for too long the
+            // server will become unresponsive
             self.update();
 
             // poll as many events as possible
@@ -46,7 +47,7 @@ impl Game {
             let mspt = start.elapsed().as_secs_f64() * 1000.0;
 
             if let Some(cooldown) = expected_tick_duration.checked_sub(start.elapsed()) {
-                thread::sleep(cooldown);
+                sleep(cooldown);
             }
 
             // tick per second
