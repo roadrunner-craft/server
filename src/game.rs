@@ -9,6 +9,7 @@ use std::io;
 use std::time::{Duration, Instant};
 
 const SERVER_TICK_PER_SEC: u32 = 20;
+const INACTIVITY_TIMEOUT: u64 = 2;
 
 pub struct Game {
     network: NetworkHandler,
@@ -53,20 +54,29 @@ impl Game {
             // tick per second
             let tps = 1.0 / start.elapsed().as_secs_f64();
 
-            println!("mspt: {:.3}, tps: {:.1}", mspt, tps);
+            // TODO: make a struct for ServerStats
+            println!(
+                "mspt: {:.3}, tps: {:.1}, players: {}",
+                mspt,
+                tps,
+                self.players.len()
+            );
         }
     }
 
     fn update(&mut self) {
-        let positions = self.players.iter().map(|(_, n)| n.position).collect();
+        self.disconnect_inactive_players();
+
+        let positions = self.players.iter().map(|(_, n)| n.position()).collect();
         self.world.load_around(positions);
     }
 
     fn handle_event(&mut self, id: &u128, event: &ClientEvent) {
         match event {
             ClientEvent::PlayerConnect => {
-                let event = ServerEvent::PlayerList {
-                    ids: self.players.keys().map(|n| *n).collect::<Vec<u128>>(),
+                let event = ServerEvent::ServerInfo {
+                    seed: self.world.seed().0,
+                    player_ids: self.players.keys().map(|n| *n).collect::<Vec<u128>>(),
                 };
                 self.network.send(id, &event);
 
@@ -75,14 +85,10 @@ impl Game {
                 self.network
                     .broadcast_except(id, ServerEvent::PlayerConnected { id: *id });
             }
-            ClientEvent::PlayerDisconnect => {
-                self.players.remove(id);
-                self.network
-                    .broadcast_except(id, ServerEvent::PlayerDisconnected { id: *id });
-            }
+            ClientEvent::PlayerDisconnect => self.disconnect_player(id),
             ClientEvent::PlayerMove { position } => {
                 if let Some(player) = self.players.get_mut(id) {
-                    player.position = *position;
+                    player.set_position(*position);
                     self.network.broadcast(ServerEvent::PlayerMoved {
                         id: *id,
                         position: *position,
@@ -90,5 +96,24 @@ impl Game {
                 }
             }
         }
+    }
+
+    fn disconnect_inactive_players(&mut self) {
+        let inative_players = self
+            .players
+            .iter_mut()
+            .filter(|(_, p)| p.last_update().elapsed().as_secs() >= INACTIVITY_TIMEOUT)
+            .map(|(_, p)| p.id())
+            .collect::<Vec<u128>>();
+
+        for id in inative_players {
+            self.disconnect_player(&id);
+        }
+    }
+
+    fn disconnect_player(&mut self, id: &u128) {
+        self.players.remove(id);
+        self.network
+            .broadcast(ServerEvent::PlayerDisconnected { id: *id });
     }
 }
