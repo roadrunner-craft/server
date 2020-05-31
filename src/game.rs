@@ -2,7 +2,7 @@ use crate::network::NetworkHandler;
 use crate::player::{Player, PlayerId};
 
 use core::events::{ClientEvent, ServerEvent};
-use core::utils::logging;
+use core::utils::logging::info;
 use core::utils::sleep;
 use core::world::World;
 use std::collections::HashMap;
@@ -56,7 +56,7 @@ impl Game {
             let tps = 1.0 / start.elapsed().as_secs_f64();
 
             // TODO: make a struct for ServerStats
-            logging::info!(
+            info!(
                 "mspt: {:.3}, tps: {:.1}, players: {}",
                 mspt,
                 tps,

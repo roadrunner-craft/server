@@ -4,7 +4,7 @@ mod player;
 
 use crate::game::Game;
 
-use core::utils::logging;
+use core::utils::logging::info;
 use std::io;
 
 gflags::define! {
@@ -26,7 +26,7 @@ fn main() -> io::Result<()> {
     gflags::parse();
 
     if HELP.flag {
-        logging::info!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        info!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
         gflags::print_help_and_exit(0);
     }
 
