@@ -1,2 +1,7 @@
-/target
 .DS_Store
+.claude
+.env
+.env.*
+!.env.example
+/target
+mise.local.toml
