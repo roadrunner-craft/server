@@ -23,7 +23,7 @@ mise run run
 By default the server binds `0.0.0.0:25565`. Both parts are configurable:
 
 ```sh
-cargo run -- --ip 127.0.0.1 --port 4000
+mise run run -- --ip 127.0.0.1 --port 4000
 ```
 
 | Flag | Description |
