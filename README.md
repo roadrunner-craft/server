@@ -15,7 +15,7 @@ git clone git@github.com:roadrunner-craft/core.git
 git clone git@github.com:roadrunner-craft/math.git
 git clone git@github.com:roadrunner-craft/server.git
 cd server
-mise run run
+mise run server
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ mise run run
 By default the server binds `0.0.0.0:25565`. Both parts are configurable:
 
 ```sh
-mise run run -- --ip 127.0.0.1 --port 4000
+mise run server -- --ip 127.0.0.1 --port 4000
 ```
 
 | Flag | Description |
